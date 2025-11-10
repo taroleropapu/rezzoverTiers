@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Rezzover Tier List</title>
+<style>
+body {
+  margin: 0;
+  font-family: 'Poppins', sans-serif;
+  background: radial-gradient(circle at top left, #0a0a0f, #050508);
+  color: #fff;
+  overflow-x: hidden;
+}
+header {
+  text-align: center;
+  padding: 30px 10px;
+  font-size: 2.5rem;
+  color: #b974ff;
+  text-shadow: 0 0 10px #b974ff, 0 0 20px #7a2cff;
+  font-weight: 700;
+}
+nav {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+nav button {
+  background: #1a1a25;
+  border: 2px solid #7a2cff;
+  color: #fff;
+  padding: 10px 18px;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: 0.3s;
+}
+nav button:hover {
+  background: #7a2cff;
+  box-shadow: 0 0 15px #7a2cff;
+}
+#searchBar {
+  display: block;
+  margin: 0 auto 20px auto;
+  padding: 10px;
+  width: 90%;
+  max-width: 400px;
+  background: #0f0f17;
+  border: 2px solid #7a2cff;
+  border-radius: 8px;
+  color: #fff;
+}
+.tier-list {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding-bottom: 80px;
+}
+.player-card {
+  width: 90%;
+  max-width: 700px;
+  background: #0f0f17;
+  border: 2px solid #7a2cff;
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  padding: 10px;
+  box-shadow: 0 0 10px #7a2cff44;
+  transition: 0.3s;
+}
+.player-card:hover {
+  transform: scale(1.02);
+  box-shadow: 0 0 15px #7a2cffaa;
+}
+.player-rank {
+  font-size: 1.3rem;
+  margin-right: 15px;
+  color: #b974ff;
+  font-weight: 600;
+}
+.player-img {
+  width: 60px;
+  height: 60px;
+  border-radius: 10px;
+  border: 2px solid #7a2cff;
+  object-fit: cover;
+  margin-right: 15px;
+}
+.player-info {
+  flex-grow: 1;
+}
+.player-name {
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+.player-level {
+  display: inline-block;
+  background: #1a1a25;
+  border: 1px solid #7a2cff;
+  border-radius: 8px;
+  padding: 2px 6px;
+  margin-left: 8px;
+  font-size: 0.9rem;
+  color: #b974ff;
+}
+footer {
+  position: fixed;
+  bottom: 0;
+  width: 100%;
+  text-align: center;
+  padding: 10px;
+  background: #0f0f17;
+}
+footer a {
+  color: #b974ff;
+  text-decoration: none;
+  transition: 0.3s;
+}
+footer a:hover {
+  text-shadow: 0 0 8px #7a2cff;
+}
+#adminPanel {
+  display: none;
+  padding: 20px;
+  background: #0f0f17;
+  border-top: 2px solid #7a2cff;
+}
+#adminPanel input, #adminPanel select {
+  background: #1a1a25;
+  border: 1px solid #7a2cff;
+  color: #fff;
+  border-radius: 6px;
+  padding: 8px;
+  margin: 5px;
+}
+#adminPanel button {
+  background: #7a2cff;
+  border: none;
+  color: #fff;
+  border-radius: 8px;
+  padding: 8px 15px;
+  cursor: pointer;
+  margin-top: 8px;
+}
+@media (max-width: 600px) {
+  .player-card {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .player-img {
+    margin-bottom: 10px;
+  }
+}
+</style>
+</head>
+<body>
+<header>Rezzover Tier List</header>
+<nav id="categories"></nav>
+<input type="text" id="searchBar" placeholder="Buscar jugador...">
+<div class="tier-list" id="tierList"></div>
+
+<footer>
+  <a href="https://discord.gg/rRfWXnXaU3" target="_blank">Discord</a> |
+  <a href="#" onclick="toggleAdmin()">Panel Admin</a>
+</footer>
+
+<div id="adminPanel">
+  <h3>Panel de Administración</h3>
+  <input type="text" id="name" placeholder="Nombre del jugador">
+  <input type="text" id="level" placeholder="Nivel (HT1-LT5)">
+  <select id="category"></select><br>
+  <input type="file" id="imgUpload" accept="image/*">
+  <input type="text" id="imgURL" placeholder="o URL de imagen"><br>
+  <button onclick="addPlayer()">Agregar jugador</button>
+  <input type="text" id="searchAdmin" placeholder="Buscar jugador en admin...">
+  <div id="adminList"></div>
+</div>
+
+<script>
+const categories = ["General","Sword","CPVP","UHC","Nethpot","SMP","Axe","Mace"];
+const tierList = document.getElementById('tierList');
+const categoryNav = document.getElementById('categories');
+const categorySelect = document.getElementById('category');
+const searchBar = document.getElementById('searchBar');
+const adminList = document.getElementById('adminList');
+
+let currentCategory = "General";
+let players = JSON.parse(localStorage.getItem("rezzover_players") || "[]");
+
+categories.forEach(cat => {
+  const btn = document.createElement('button');
+  btn.textContent = cat;
+  btn.onclick = () => { currentCategory = cat; renderPlayers(); };
+  categoryNav.appendChild(btn);
+  const opt = document.createElement('option');
+  opt.value = cat; opt.textContent = cat;
+  categorySelect.appendChild(opt);
+});
+
+function renderPlayers() {
+  tierList.innerHTML = "";
+  const filtered = players.filter(p => p.category === currentCategory && 
+    p.name.toLowerCase().includes(searchBar.value.toLowerCase()));
+  filtered.forEach((p, i) => {
+    const card = document.createElement('div');
+    card.className = "player-card";
+    card.innerHTML = `
+      <div class="player-rank">#${i+1}</div>
+      <img src="${p.img}" class="player-img">
+      <div class="player-info">
+        <div class="player-name">${p.name}<span class="player-level">${p.level}</span></div>
+        <div class="player-cat">${p.category}</div>
+      </div>`;
+    tierList.appendChild(card);
+  });
+}
+searchBar.addEventListener('input', renderPlayers);
+
+function toggleAdmin() {
+  const panel = document.getElementById('adminPanel');
+  panel.style.display = panel.style.display === "none" ? "block" : "none";
+  renderAdminList();
+}
+
+function addPlayer() {
+  const name = document.getElementById('name').value;
+  const level = document.getElementById('level').value;
+  const category = document.getElementById('category').value;
+  const imgURL = document.getElementById('imgURL').value;
+  const fileInput = document.getElementById('imgUpload');
+  if (!name || !level || !category) return alert("Completa todos los campos.");
+
+  if (fileInput.files && fileInput.files[0]) {
+    const reader = new FileReader();
+    reader.onload = e => {
+      players.push({name, level, category, img: e.target.result});
+      saveAndRender();
+    };
+    reader.readAsDataURL(fileInput.files[0]);
+  } else {
+    players.push({name, level, category, img: imgURL || "https://via.placeholder.com/60"});
+    saveAndRender();
+  }
+}
+
+function renderAdminList() {
+  adminList.innerHTML = "";
+  players.filter(p => p.name.toLowerCase().includes(document.getElementById('searchAdmin').value.toLowerCase()))
+  .forEach((p, i) => {
+    const div = document.createElement('div');
+    div.innerHTML = `${p.name} (${p.category}) <button onclick="delPlayer(${i})">❌</button>`;
+    adminList.appendChild(div);
+  });
+}
+
+document.getElementById('searchAdmin').addEventListener('input', renderAdminList);
+
+function delPlayer(i) {
+  players.splice(i, 1);
+  saveAndRender();
+}
+
+function saveAndRender() {
+  localStorage.setItem("rezzover_players", JSON.stringify(players));
+  renderPlayers();
+  renderAdminList();
+}
+renderPlayers();
+</script>
+</body>
+</html>
